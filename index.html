@@ -72,6 +72,14 @@ function updateInventory() {
     const row = document.getElementById('row').value;
     const product = document.getElementById('product').value;
 
+    if (!inventory[bay][column]) {
+        inventory[bay][column] = {};
+    }
+    if (inventory[bay][column][row] === undefined) {
+        inventory[bay][column][row] = "";
+    }
+
+
     // Check for duplicate coil number at the same location
     let duplicateLocation = null;
     for (let b in inventory) {
@@ -160,7 +168,7 @@ function updateInventory() {
         // Function to download inventory as Excel
         function downloadAsExcel() {
             let wb = XLSX.utils.book_new();
-            let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
+            let ws_data = 'Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row';
 
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
