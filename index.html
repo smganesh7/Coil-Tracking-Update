@@ -56,21 +56,24 @@
     </div>
     
     <script>
-        let inventory;
+        let inventory = {};
 
         // Fetch the inventory data from the provided URL
-        fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
-            .then(response => response.json())
-            .then(data => {
-                inventory = data;
-                initializeBays();
-                displayInventory();
-            })
-            .catch(error => console.error('Error fetching inventory:', error));
+        function fetchInventory() {
+            fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
+                .then(response => response.json())
+                .then(data => {
+                    inventory = data;
+                    initializeBays();
+                    displayInventory();
+                })
+                .catch(error => console.error('Error fetching inventory:', error));
+        }
 
         // Initialize columns and rows for each bay
         function initializeBay(bay) {
-            for (let column = 'A'; column <= 'Z'; column = String.fromCharCode(column.charCodeAt(0) + 1)) {
+            for (let i = 0; i < 26; i++) {
+                let column = String.fromCharCode(65 + i);
                 if (!inventory[bay][column]) {
                     inventory[bay][column] = {};
                 }
@@ -95,7 +98,12 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
-            // Check for duplicate coil number at the same location
+            if (!inventory[bay] || !inventory[bay][column] || !inventory[bay][column][row]) {
+                alert("Invalid Column or Row!");
+                return;
+            }
+
+            // Check for duplicate coil number at a different location
             let duplicateLocation = null;
             for (let b in inventory) {
                 for (let c in inventory[b]) {
@@ -119,21 +127,10 @@
                 inventory[dupBay][dupColumn][dupRow] = "";
             }
 
-            // Check for existing coil number at the same location
-            if (inventory[bay][column] && inventory[bay][column][row] !== undefined && inventory[bay][column][row] !== "") {
-                if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
-                    return;
-                }
-            }
-
-            // Update inventory
-            if (inventory[bay][column] && inventory[bay][column][row] !== undefined) {
-                inventory[bay][column][row] = product;
-                saveInventory();
-                displayInventory();
-            } else {
-                alert("Invalid Column or Row!");
-            }
+            // Update the inventory
+            inventory[bay][column][row] = product;
+            saveInventory();
+            displayInventory();
         }
 
         // Function to display inventory
@@ -299,14 +296,7 @@
 
         // Initialize and display the inventory on page load
         function initializeAndDisplayInventory() {
-            fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
-                .then(response => response.json())
-                .then(data => {
-                    inventory = data;
-                    initializeBays();
-                    displayInventory();
-                })
-                .catch(error => console.error('Error fetching inventory:', error));
+            fetchInventory();
         }
 
         initializeAndDisplayInventory();
