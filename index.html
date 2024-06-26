@@ -56,7 +56,7 @@
     
     <script>
         let inventory = {
-            MN: { A: { 1: "Coil1", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
+            MN: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
             NP: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
             PQ: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
             RS: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
@@ -130,7 +130,7 @@
         // Function to download inventory as Excel
         function downloadAsExcel() {
             let wb = XLSX.utils.book_new();
-            let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
+            let ws_data = 'Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row';
 
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
