@@ -47,7 +47,6 @@
     </form>
     
     <h2>Inventory Status</h2>
-    <button type="button" onclick="deleteSelectedEntries()">Delete Selected Entries</button>
     <button type="button" onclick="downloadAsExcel()">Download as Excel</button>
     <button type="button" onclick="downloadAsPDF()">Download as PDF</button>
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select/Deselect All
@@ -56,40 +55,13 @@
     </div>
     
     <script>
-        let inventory = {};
-
-        // Fetch the inventory data from the provided URL
-        function fetchInventory() {
-            fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
-                .then(response => response.json())
-                .then(data => {
-                    inventory = data;
-                    initializeBays();
-                    displayInventory();
-                })
-                .catch(error => console.error('Error fetching inventory:', error));
-        }
-
-        // Initialize columns and rows for each bay
-        function initializeBay(bay) {
-            for (let i = 0; i < 26; i++) {
-                let column = String.fromCharCode(65 + i);
-                if (!inventory[bay][column]) {
-                    inventory[bay][column] = {};
-                }
-                for (let row = 1; row <= 26; row++) {
-                    if (inventory[bay][column][row] === undefined) {
-                        inventory[bay][column][row] = "";
-                    }
-                }
-            }
-        }
-
-        function initializeBays() {
-            for (let bay in inventory) {
-                initializeBay(bay);
-            }
-        }
+        let inventory = {
+            MN: { A: { 1: "Coil1", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
+            NP: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
+            PQ: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
+            RS: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
+            ST: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } }
+        };
 
         // Function to update inventory
         function updateInventory() {
@@ -98,7 +70,7 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
-            if (!inventory[bay] || !inventory[bay][column] || !inventory[bay][column][row]) {
+            if (!inventory[bay] || !inventory[bay][column] || inventory[bay][column][row] === undefined) {
                 alert("Invalid Column or Row!");
                 return;
             }
@@ -129,13 +101,12 @@
 
             // Update the inventory
             inventory[bay][column][row] = product;
-            saveInventory();
             displayInventory();
         }
 
         // Function to display inventory
         function displayInventory() {
-            let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th><th>Select</th></tr>';
+            let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th></tr>';
 
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
@@ -146,7 +117,6 @@
                                             <td>${bay}</td>
                                             <td>${column}</td>
                                             <td>${row}</td>
-                                            <td><input type="checkbox" class="delete-checkbox" data-bay="${bay}" data-column="${column}" data-row="${row}"></td>
                                           </tr>`;
                         }
                     }
@@ -155,46 +125,6 @@
 
             tableHTML += '</table>';
             document.getElementById('inventoryTable').innerHTML = tableHTML;
-        }
-
-        // Function to save inventory data back to the server
-        function saveInventory() {
-            fetch('https://smganesh7.github.io/Coil-Tracking-Update/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(inventory)
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log('Inventory updated successfully');
-                } else {
-                    console.error('Failed to update inventory');
-                }
-            })
-            .catch(error => console.error('Error updating inventory:', error));
-        }
-
-        // Function to delete selected entries
-        function deleteSelectedEntries() {
-            const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert('No entries selected for deletion.');
-                return;
-            }
-            if (!confirm('Are you sure you want to delete the selected entries?')) {
-                return;
-            }
-            checkboxes.forEach(checkbox => {
-                const bay = checkbox.getAttribute('data-bay');
-                const column = checkbox.getAttribute('data-column');
-                const row = checkbox.getAttribute('data-row');
-                inventory[bay][column][row] = "";
-            });
-
-            saveInventory();
-            displayInventory();
         }
 
         // Function to download inventory as Excel
@@ -229,46 +159,23 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
 
-            let columns = ["MN Bay", "NP Bay", "PQ Bay", "RS Bay", "ST Bay"];
+            let columns = ["Coil Number", "Bay", "Column", "Row"];
             let tableData = [];
-            let maxRows = 0;
 
-            // Collect data for each bay
+            // Collect data for the table
             for (let bay in inventory) {
-                let bayData = [];
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
                         if (inventory[bay][column][row] !== "") {
-                            bayData.push(`${inventory[bay][column][row]}-${bay}-${column}-${row}`);
+                            tableData.push([inventory[bay][column][row], bay, column, row]);
                         }
                     }
                 }
-                tableData.push(bayData);
-                if (bayData.length > maxRows) {
-                    maxRows = bayData.length;
-                }
-            }
-
-            // Ensure all columns have the same number of rows
-            for (let i = 0; i < tableData.length; i++) {
-                while (tableData[i].length < maxRows) {
-                    tableData[i].push("");
-                }
-            }
-
-            // Convert the data into row-wise format for autoTable
-            let rowWiseData = [];
-            for (let i = 0; i < maxRows; i++) {
-                let row = [];
-                for (let j = 0; j < tableData.length; j++) {
-                    row.push(tableData[j][i]);
-                }
-                rowWiseData.push(row);
             }
 
             doc.autoTable({
                 head: [columns],
-                body: rowWiseData,
+                body: tableData,
                 startY: 30,
                 styles: { 
                     cellPadding: 3, 
@@ -295,11 +202,7 @@
         }
 
         // Initialize and display the inventory on page load
-        function initializeAndDisplayInventory() {
-            fetchInventory();
-        }
-
-        initializeAndDisplayInventory();
+        displayInventory();
     </script>
 </body>
 </html>
