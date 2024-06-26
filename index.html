@@ -14,6 +14,12 @@
             text-align: center;
         }
     </style>
+    <!-- Include SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <!-- Include jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <!-- Include jsPDF AutoTable for table formatting in PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <h1>Coil Tracking Update</h1>
@@ -45,13 +51,24 @@
     <button type="button" onclick="downloadAsExcel()">Download as Excel</button>
     <button type="button" onclick="downloadAsPDF()">Download as PDF</button>
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select/Deselect All
-    <div id="inventoryTable">
-        <!-- Inventory table will be inserted here by JavaScript -->
-    </div>
+    <table id="inventoryTable">
+        <tr>
+            <th>Coil Number</th>
+            <th>Bay</th>
+            <th>Column</th>
+            <th>Row</th>
+            <th>Select</th>
+        </tr>
+    </table>
     
     <script>
-        // Initialize or load inventory data
-        let inventory = {};
+        let inventory = {
+            MN: {},
+            NP: {},
+            PQ: {},
+            RS: {},
+            ST: {}
+        };
 
         // Function to update inventory
         function updateInventory() {
@@ -60,41 +77,66 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
+            // Check for duplicate coil number at the same location
+            let duplicateLocation = null;
+            for (let b in inventory) {
+                for (let c in inventory[b]) {
+                    for (let r in inventory[b][c]) {
+                        if (inventory[b][c][r] === product && !(b === bay && c === column && r === row)) {
+                            duplicateLocation = `${b}-${c}-${r}`;
+                            break;
+                        }
+                    }
+                    if (duplicateLocation) break;
+                }
+                if (duplicateLocation) break;
+            }
+
+            if (duplicateLocation) {
+                let [dupBay, dupColumn, dupRow] = duplicateLocation.split('-');
+                if (!confirm(`Coil number ${product} is already in ${dupBay}-${dupColumn}-${dupRow}. Do you want to replace it with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
+                }
+                // Clear the old location
+                inventory[dupBay][dupColumn][dupRow] = "";
+            }
+
             // Check for existing coil number at the same location
-            if (inventory[bay] && inventory[bay][column] && inventory[bay][column][row] !== undefined) {
+            if (inventory[bay][column] && inventory[bay][column][row] !== undefined && inventory[bay][column][row] !== "") {
                 if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
                     return;
                 }
             }
 
-            // Update or add new entry
-            if (!inventory[bay]) inventory[bay] = {};
-            if (!inventory[bay][column]) inventory[bay][column] = {};
-            inventory[bay][column][row] = product;
-
-            // Update the table display
-            displayInventory();
+            // Update inventory
+            if (inventory[bay][column] && inventory[bay][column][row] !== undefined) {
+                inventory[bay][column][row] = product;
+                displayInventory();
+            } else {
+                alert("Invalid Column or Row!");
+            }
         }
 
         // Function to display inventory
         function displayInventory() {
-            let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th><th>Select</th></tr>';
+            let tableHTML = '<tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th><th>Select</th></tr>';
 
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
-                        tableHTML += `<tr>
-                                        <td>${inventory[bay][column][row]}</td>
-                                        <td>${bay}</td>
-                                        <td>${column}</td>
-                                        <td>${row}</td>
-                                        <td><input type="checkbox" class="delete-checkbox"></td>
-                                      </tr>`;
+                        if (inventory[bay][column][row] !== "") {
+                            tableHTML += `<tr>
+                                            <td>${inventory[bay][column][row]}</td>
+                                            <td>${bay}</td>
+                                            <td>${column}</td>
+                                            <td>${row}</td>
+                                            <td><input type="checkbox" class="delete-checkbox" data-bay="${bay}" data-column="${column}" data-row="${row}"></td>
+                                          </tr>`;
+                        }
                     }
                 }
             }
 
-            tableHTML += '</table>';
             document.getElementById('inventoryTable').innerHTML = tableHTML;
         }
 
@@ -109,13 +151,13 @@
                 return;
             }
             checkboxes.forEach(checkbox => {
-                const row = checkbox.parentNode.parentNode;
-                const bay = row.cells[1].textContent;
-                const column = row.cells[2].textContent;
-                const rowNum = row.cells[3].textContent;
-                delete inventory[bay][column][rowNum];
-                row.remove();
+                const bay = checkbox.getAttribute('data-bay');
+                const column = checkbox.getAttribute('data-column');
+                const row = checkbox.getAttribute('data-row');
+                inventory[bay][column][row] = "";
             });
+
+            displayInventory();
         }
 
         // Function to download inventory as Excel
@@ -126,7 +168,9 @@
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
-                        ws_data.push([inventory[bay][column][row], bay, column, row]);
+                        if (inventory[bay][column][row] !== "") {
+                            ws_data.push([inventory[bay][column][row], bay, column, row]);
+                        }
                     }
                 }
             }
@@ -148,20 +192,46 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
 
-            let columns = ["Coil Number", "Bay", "Column", "Row"];
+            let columns = ["MN Bay", "NP Bay", "PQ Bay", "RS Bay", "ST Bay"];
             let tableData = [];
+            let maxRows = 0;
 
+            // Collect data for each bay
             for (let bay in inventory) {
+                let bayData = [];
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
-                        tableData.push([inventory[bay][column][row], bay, column, row]);
+                        if (inventory[bay][column][row] !== "") {
+                            bayData.push(`${inventory[bay][column][row]}-${bay}-${column}-${row}`);
+                        }
                     }
                 }
+                tableData.push(bayData);
+                if (bayData.length > maxRows) {
+                    maxRows = bayData.length;
+                }
+            }
+
+            // Ensure all columns have the same number of rows
+            for (let i = 0; i < tableData.length; i++) {
+                while (tableData[i].length < maxRows) {
+                    tableData[i].push("");
+                }
+            }
+
+            // Convert the data into row-wise format for autoTable
+            let rowWiseData = [];
+            for (let i = 0; i < maxRows; i++) {
+                let row = [];
+                for (let j = 0; j < tableData.length; j++) {
+                    row.push(tableData[j][i]);
+                }
+                rowWiseData.push(row);
             }
 
             doc.autoTable({
                 head: [columns],
-                body: tableData,
+                body: rowWiseData,
                 startY: 30,
                 styles: { 
                     cellPadding: 3, 
