@@ -14,12 +14,6 @@
             text-align: center;
         }
     </style>
-    <!-- Include SheetJS for Excel export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <!-- Include jsPDF for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-    <!-- Include jsPDF AutoTable for table formatting in PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <h1>Coil Tracking Update</h1>
@@ -47,22 +41,39 @@
     </form>
     
     <h2>Inventory Status</h2>
+    <button type="button" onclick="deleteSelectedEntries()">Delete Selected Entries</button>
     <button type="button" onclick="downloadAsExcel()">Download as Excel</button>
     <button type="button" onclick="downloadAsPDF()">Download as PDF</button>
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select/Deselect All
     <div id="inventoryTable">
-        <!-- Inventory table will be inserted here by JavaScript -->
+        <table>
+            <tr>
+                <th>Coil Number</th>
+                <th>Bay</th>
+                <th>Column</th>
+                <th>Row</th>
+                <th>Select</th>
+            </tr>
+            <!-- Static data -->
+            <tr>
+                <td>1234</td>
+                <td>MN</td>
+                <td>A</td>
+                <td>1</td>
+                <td><input type="checkbox" class="delete-checkbox"></td>
+            </tr>
+            <tr>
+                <td>5678</td>
+                <td>NP</td>
+                <td>B</td>
+                <td>2</td>
+                <td><input type="checkbox" class="delete-checkbox"></td>
+            </tr>
+            <!-- Add more rows as needed -->
+        </table>
     </div>
     
     <script>
-        let inventory = {
-            MN: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
-            NP: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
-            PQ: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
-            RS: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } },
-            ST: { A: { 1: "", 2: "", 3: "" }, B: { 1: "", 2: "", 3: "" }, C: { 1: "", 2: "", 3: "" } }
-        };
-
         // Function to update inventory
         function updateInventory() {
             const bay = document.getElementById('bay').value;
@@ -70,77 +81,58 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
-            if (!inventory[bay] || !inventory[bay][column] || inventory[bay][column][row] === undefined) {
-                alert("Invalid Column or Row!");
-                return;
-            }
-
-            // Check for duplicate coil number at a different location
-            let duplicateLocation = null;
-            for (let b in inventory) {
-                for (let c in inventory[b]) {
-                    for (let r in inventory[b][c]) {
-                        if (inventory[b][c][r] === product && !(b === bay && c === column && r === row)) {
-                            duplicateLocation = `${b}-${c}-${r}`;
-                            break;
-                        }
+            let table = document.getElementById('inventoryTable').querySelector('table');
+            
+            // Check if entry already exists
+            let exists = false;
+            let rows = table.querySelectorAll('tr');
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].querySelectorAll('td');
+                if (cells[1].textContent === bay && cells[2].textContent === column && cells[3].textContent === row) {
+                    if (!confirm(`Do you want to replace coil number ${cells[0].textContent} with ${product} at ${bay}-${column}-${row}?`)) {
+                        return;
                     }
-                    if (duplicateLocation) break;
+                    cells[0].textContent = product;
+                    exists = true;
+                    break;
                 }
-                if (duplicateLocation) break;
             }
 
-            if (duplicateLocation) {
-                let [dupBay, dupColumn, dupRow] = duplicateLocation.split('-');
-                if (!confirm(`Coil number ${product} is already in ${dupBay}-${dupColumn}-${dupRow}. Do you want to replace it with ${product} at ${bay}-${column}-${row}?`)) {
-                    return;
-                }
-                // Clear the old location
-                inventory[dupBay][dupColumn][dupRow] = "";
+            // If entry doesn't exist, add a new row
+            if (!exists) {
+                let newRow = document.createElement('tr');
+                newRow.innerHTML = `<td>${product}</td><td>${bay}</td><td>${column}</td><td>${row}</td><td><input type="checkbox" class="delete-checkbox"></td>`;
+                table.appendChild(newRow);
             }
-
-            // Update the inventory
-            inventory[bay][column][row] = product;
-            displayInventory();
         }
 
-        // Function to display inventory
-        function displayInventory() {
-            let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th></tr>';
-
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            tableHTML += `<tr>
-                                            <td>${inventory[bay][column][row]}</td>
-                                            <td>${bay}</td>
-                                            <td>${column}</td>
-                                            <td>${row}</td>
-                                          </tr>`;
-                        }
-                    }
-                }
+        // Function to delete selected entries
+        function deleteSelectedEntries() {
+            const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('No entries selected for deletion.');
+                return;
             }
-
-            tableHTML += '</table>';
-            document.getElementById('inventoryTable').innerHTML = tableHTML;
+            if (!confirm('Are you sure you want to delete the selected entries?')) {
+                return;
+            }
+            checkboxes.forEach(checkbox => {
+                checkbox.parentNode.parentNode.remove();
+            });
         }
 
         // Function to download inventory as Excel
         function downloadAsExcel() {
             let wb = XLSX.utils.book_new();
-            let ws_data = 'Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row';
+            let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
 
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            ws_data.push([inventory[bay][column][row], bay, column, row]);
-                        }
-                    }
+            let rows = document.querySelectorAll('#inventoryTable table tr');
+            rows.forEach(row => {
+                let cells = row.querySelectorAll('td');
+                if (cells.length === 5) { // Ensure it's a data row
+                    ws_data.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent]);
                 }
-            }
+            });
 
             let ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "Inventory");
@@ -162,16 +154,13 @@
             let columns = ["Coil Number", "Bay", "Column", "Row"];
             let tableData = [];
 
-            // Collect data for the table
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            tableData.push([inventory[bay][column][row], bay, column, row]);
-                        }
-                    }
+            let rows = document.querySelectorAll('#inventoryTable table tr');
+            rows.forEach(row => {
+                let cells = row.querySelectorAll('td');
+                if (cells.length === 5) { // Ensure it's a data row
+                    tableData.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent]);
                 }
-            }
+            });
 
             doc.autoTable({
                 head: [columns],
@@ -200,9 +189,6 @@
                 checkbox.checked = selectAllCheckbox.checked;
             });
         }
-
-        // Initialize and display the inventory on page load
-        displayInventory();
     </script>
 </body>
 </html>
