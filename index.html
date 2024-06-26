@@ -46,46 +46,12 @@
     <button type="button" onclick="downloadAsPDF()">Download as PDF</button>
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select/Deselect All
     <div id="inventoryTable">
-        <table>
-            <tr>
-                <th>Coil Number</th>
-                <th>Bay</th>
-                <th>Column</th>
-                <th>Row</th>
-                <th>Select</th>
-            </tr>
-            <!-- Static data (initial entries) -->
-            <tr>
-                <td>1234</td>
-                <td>MN</td>
-                <td>A</td>
-                <td>1</td>
-                <td><input type="checkbox" class="delete-checkbox"></td>
-            </tr>
-            <tr>
-                <td>5678</td>
-                <td>NP</td>
-                <td>B</td>
-                <td>2</td>
-                <td><input type="checkbox" class="delete-checkbox"></td>
-            </tr>
-            <!-- Dynamic data will be added here -->
-        </table>
+        <!-- Inventory table will be inserted here by JavaScript -->
     </div>
     
     <script>
-        // Initial inventory data
-        let inventory = {
-            MN: {
-                A: { 1: "1234" },
-            },
-            NP: {
-                B: { 2: "5678" },
-            },
-            PQ: {},
-            RS: {},
-            ST: {}
-        };
+        // Initialize or load inventory data
+        let inventory = {};
 
         // Function to update inventory
         function updateInventory() {
@@ -94,7 +60,7 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
-            // Check for duplicate entry at the same location
+            // Check for existing coil number at the same location
             if (inventory[bay] && inventory[bay][column] && inventory[bay][column][row] !== undefined) {
                 if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
                     return;
@@ -144,7 +110,6 @@
             }
             checkboxes.forEach(checkbox => {
                 const row = checkbox.parentNode.parentNode;
-                const coilNumber = row.cells[0].textContent;
                 const bay = row.cells[1].textContent;
                 const column = row.cells[2].textContent;
                 const rowNum = row.cells[3].textContent;
