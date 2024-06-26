@@ -54,7 +54,7 @@
                 <th>Row</th>
                 <th>Select</th>
             </tr>
-            <!-- Static data -->
+            <!-- Static data (initial entries) -->
             <tr>
                 <td>1234</td>
                 <td>MN</td>
@@ -69,11 +69,24 @@
                 <td>2</td>
                 <td><input type="checkbox" class="delete-checkbox"></td>
             </tr>
-            <!-- Add more rows as needed -->
+            <!-- Dynamic data will be added here -->
         </table>
     </div>
     
     <script>
+        // Initial inventory data
+        let inventory = {
+            MN: {
+                A: { 1: "1234" },
+            },
+            NP: {
+                B: { 2: "5678" },
+            },
+            PQ: {},
+            RS: {},
+            ST: {}
+        };
+
         // Function to update inventory
         function updateInventory() {
             const bay = document.getElementById('bay').value;
@@ -81,29 +94,42 @@
             const row = document.getElementById('row').value;
             const product = document.getElementById('product').value;
 
-            let table = document.getElementById('inventoryTable').querySelector('table');
-            
-            // Check if entry already exists
-            let exists = false;
-            let rows = table.querySelectorAll('tr');
-            for (let i = 1; i < rows.length; i++) {
-                let cells = rows[i].querySelectorAll('td');
-                if (cells[1].textContent === bay && cells[2].textContent === column && cells[3].textContent === row) {
-                    if (!confirm(`Do you want to replace coil number ${cells[0].textContent} with ${product} at ${bay}-${column}-${row}?`)) {
-                        return;
-                    }
-                    cells[0].textContent = product;
-                    exists = true;
-                    break;
+            // Check for duplicate entry at the same location
+            if (inventory[bay] && inventory[bay][column] && inventory[bay][column][row] !== undefined) {
+                if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
                 }
             }
 
-            // If entry doesn't exist, add a new row
-            if (!exists) {
-                let newRow = document.createElement('tr');
-                newRow.innerHTML = `<td>${product}</td><td>${bay}</td><td>${column}</td><td>${row}</td><td><input type="checkbox" class="delete-checkbox"></td>`;
-                table.appendChild(newRow);
+            // Update or add new entry
+            if (!inventory[bay]) inventory[bay] = {};
+            if (!inventory[bay][column]) inventory[bay][column] = {};
+            inventory[bay][column][row] = product;
+
+            // Update the table display
+            displayInventory();
+        }
+
+        // Function to display inventory
+        function displayInventory() {
+            let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th><th>Select</th></tr>';
+
+            for (let bay in inventory) {
+                for (let column in inventory[bay]) {
+                    for (let row in inventory[bay][column]) {
+                        tableHTML += `<tr>
+                                        <td>${inventory[bay][column][row]}</td>
+                                        <td>${bay}</td>
+                                        <td>${column}</td>
+                                        <td>${row}</td>
+                                        <td><input type="checkbox" class="delete-checkbox"></td>
+                                      </tr>`;
+                    }
+                }
             }
+
+            tableHTML += '</table>';
+            document.getElementById('inventoryTable').innerHTML = tableHTML;
         }
 
         // Function to delete selected entries
@@ -117,7 +143,13 @@
                 return;
             }
             checkboxes.forEach(checkbox => {
-                checkbox.parentNode.parentNode.remove();
+                const row = checkbox.parentNode.parentNode;
+                const coilNumber = row.cells[0].textContent;
+                const bay = row.cells[1].textContent;
+                const column = row.cells[2].textContent;
+                const rowNum = row.cells[3].textContent;
+                delete inventory[bay][column][rowNum];
+                row.remove();
             });
         }
 
@@ -126,13 +158,13 @@
             let wb = XLSX.utils.book_new();
             let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
 
-            let rows = document.querySelectorAll('#inventoryTable table tr');
-            rows.forEach(row => {
-                let cells = row.querySelectorAll('td');
-                if (cells.length === 5) { // Ensure it's a data row
-                    ws_data.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent]);
+            for (let bay in inventory) {
+                for (let column in inventory[bay]) {
+                    for (let row in inventory[bay][column]) {
+                        ws_data.push([inventory[bay][column][row], bay, column, row]);
+                    }
                 }
-            });
+            }
 
             let ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "Inventory");
@@ -154,13 +186,13 @@
             let columns = ["Coil Number", "Bay", "Column", "Row"];
             let tableData = [];
 
-            let rows = document.querySelectorAll('#inventoryTable table tr');
-            rows.forEach(row => {
-                let cells = row.querySelectorAll('td');
-                if (cells.length === 5) { // Ensure it's a data row
-                    tableData.push([cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent]);
+            for (let bay in inventory) {
+                for (let column in inventory[bay]) {
+                    for (let row in inventory[bay][column]) {
+                        tableData.push([inventory[bay][column][row], bay, column, row]);
+                    }
                 }
-            });
+            }
 
             doc.autoTable({
                 head: [columns],
@@ -189,6 +221,9 @@
                 checkbox.checked = selectAllCheckbox.checked;
             });
         }
+
+        // Initialize and display the inventory on page load
+        displayInventory();
     </script>
 </body>
 </html>
