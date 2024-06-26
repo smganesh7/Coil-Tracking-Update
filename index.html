@@ -56,62 +56,86 @@
     </div>
     
     <script>
-        // Initialize or load inventory data from localStorage
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || {
-            MN: {},
-            NP: {},
-            PQ: {},
-            RS: {},
-            ST: {}
-        };
+        let inventory;
 
-// Function to update inventory
-function updateInventory() {
-    const bay = document.getElementById('bay').value;
-    const column = document.getElementById('column').value.toUpperCase();
-    const row = document.getElementById('row').value;
-    const product = document.getElementById('product').value;
+        // Fetch the inventory data from the provided URL
+        fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
+            .then(response => response.json())
+            .then(data => {
+                inventory = data;
+                initializeBays();
+                displayInventory();
+            })
+            .catch(error => console.error('Error fetching inventory:', error));
 
-    // Check for duplicate coil number at the same location
-    let duplicateLocation = null;
-    for (let b in inventory) {
-        for (let c in inventory[b]) {
-            for (let r in inventory[b][c]) {
-                if (inventory[b][c][r] === product && !(b === bay && c === column && r === row)) {
-                    duplicateLocation = `${b}-${c}-${r}`;
-                    break;
+        // Initialize columns and rows for each bay
+        function initializeBay(bay) {
+            for (let column = 'A'; column <= 'Z'; column = String.fromCharCode(column.charCodeAt(0) + 1)) {
+                if (!inventory[bay][column]) {
+                    inventory[bay][column] = {};
+                }
+                for (let row = 1; row <= 26; row++) {
+                    if (inventory[bay][column][row] === undefined) {
+                        inventory[bay][column][row] = "";
+                    }
                 }
             }
-            if (duplicateLocation) break;
         }
-        if (duplicateLocation) break;
-    }
 
-    if (duplicateLocation) {
-        let [dupBay, dupColumn, dupRow] = duplicateLocation.split('-');
-        if (!confirm(`Coil number ${product} is already in ${dupBay}-${dupColumn}-${dupRow}. Do you want to replace it with ${product} at ${bay}-${column}-${row}?`)) {
-            return;
+        function initializeBays() {
+            for (let bay in inventory) {
+                initializeBay(bay);
+            }
         }
-        // Clear the old location
-        inventory[dupBay][dupColumn][dupRow] = "";
-    }
 
-    // Check for existing coil number at the same location
-    if (inventory[bay][column] && inventory[bay][column][row] !== undefined && inventory[bay][column][row] !== "") {
-        if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
-            return;
+        // Function to update inventory
+        function updateInventory() {
+            const bay = document.getElementById('bay').value;
+            const column = document.getElementById('column').value.toUpperCase();
+            const row = document.getElementById('row').value;
+            const product = document.getElementById('product').value;
+
+            // Check for duplicate coil number at the same location
+            let duplicateLocation = null;
+            for (let b in inventory) {
+                for (let c in inventory[b]) {
+                    for (let r in inventory[b][c]) {
+                        if (inventory[b][c][r] === product && !(b === bay && c === column && r === row)) {
+                            duplicateLocation = `${b}-${c}-${r}`;
+                            break;
+                        }
+                    }
+                    if (duplicateLocation) break;
+                }
+                if (duplicateLocation) break;
+            }
+
+            if (duplicateLocation) {
+                let [dupBay, dupColumn, dupRow] = duplicateLocation.split('-');
+                if (!confirm(`Coil number ${product} is already in ${dupBay}-${dupColumn}-${dupRow}. Do you want to replace it with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
+                }
+                // Clear the old location
+                inventory[dupBay][dupColumn][dupRow] = "";
+            }
+
+            // Check for existing coil number at the same location
+            if (inventory[bay][column] && inventory[bay][column][row] !== undefined && inventory[bay][column][row] !== "") {
+                if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
+                }
+            }
+
+            // Update inventory
+            if (inventory[bay][column] && inventory[bay][column][row] !== undefined) {
+                inventory[bay][column][row] = product;
+                saveInventory();
+                displayInventory();
+            } else {
+                alert("Invalid Column or Row!");
+            }
         }
-    }
 
-    // Update inventory
-    if (inventory[bay][column] && inventory[bay][column][row] !== undefined) {
-        inventory[bay][column][row] = product;
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-        displayInventory();
-    } else {
-        alert("Invalid Column or Row!");
-    }
-}
         // Function to display inventory
         function displayInventory() {
             let tableHTML = '<table><tr><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th><th>Select</th></tr>';
@@ -136,6 +160,25 @@ function updateInventory() {
             document.getElementById('inventoryTable').innerHTML = tableHTML;
         }
 
+        // Function to save inventory data back to the server
+        function saveInventory() {
+            fetch('https://smganesh7.github.io/Coil-Tracking-Update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(inventory)
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Inventory updated successfully');
+                } else {
+                    console.error('Failed to update inventory');
+                }
+            })
+            .catch(error => console.error('Error updating inventory:', error));
+        }
+
         // Function to delete selected entries
         function deleteSelectedEntries() {
             const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
@@ -153,14 +196,14 @@ function updateInventory() {
                 inventory[bay][column][row] = "";
             });
 
-            localStorage.setItem('inventory', JSON.stringify(inventory));
+            saveInventory();
             displayInventory();
         }
 
         // Function to download inventory as Excel
         function downloadAsExcel() {
             let wb = XLSX.utils.book_new();
-            let ws_data = 'Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row';
+            let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
 
             for (let bay in inventory) {
                 for (let column in inventory[bay]) {
@@ -255,7 +298,18 @@ function updateInventory() {
         }
 
         // Initialize and display the inventory on page load
-        displayInventory();
+        function initializeAndDisplayInventory() {
+            fetch('https://smganesh7.github.io/Coil-Tracking-Update/')
+                .then(response => response.json())
+                .then(data => {
+                    inventory = data;
+                    initializeBays();
+                    displayInventory();
+                })
+                .catch(error => console.error('Error fetching inventory:', error));
+        }
+
+        initializeAndDisplayInventory();
     </script>
 </body>
 </html>
