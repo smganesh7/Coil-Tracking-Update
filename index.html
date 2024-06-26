@@ -72,14 +72,6 @@ function updateInventory() {
     const row = document.getElementById('row').value;
     const product = document.getElementById('product').value;
 
-    if (!inventory[bay][column]) {
-        inventory[bay][column] = {};
-    }
-    if (inventory[bay][column][row] === undefined) {
-        inventory[bay][column][row] = "";
-    }
-
-
     // Check for duplicate coil number at the same location
     let duplicateLocation = null;
     for (let b in inventory) {
