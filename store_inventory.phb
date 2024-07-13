@@ -1,0 +1,49 @@
+<?php
+// Check if form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Validate and sanitize inputs (you may need more validation based on your requirements)
+    $product = $_POST['product'];
+    $bay = $_POST['bay'];
+    $column = $_POST['column'];
+    $row = $_POST['row'];
+
+    // Validate inputs (example: column should be a single letter)
+    if (!preg_match("/^[A-Z]$/", $column)) {
+        die("Invalid column value. Please enter a single letter (A-Z).");
+    }
+
+    if ($row < 1 || $row > 26) {
+        die("Invalid row value. Please enter a number between 1 and 26.");
+    }
+
+    // Store data in a text file (you can modify this to store in a database or elsewhere)
+    $file = 'inventory_data.txt';
+    $data = "$product, $bay, $column, $row\n";
+    
+    // Append the data to the file
+    if (file_put_contents($file, $data, FILE_APPEND | LOCK_EX) === false) {
+        die("Error storing data.");
+    }
+
+    // Redirect back to index.html or wherever you want after storing data
+    header("Location: https://coil-tracking.netlify.app/");
+    exit();
+}
+?>e = ?";
+    
+    // Prepare and bind parameters
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("is", $quantity, $product_name);
+    
+    // Execute SQL statement
+    if ($stmt->execute()) {
+        echo "Inventory updated successfully.";
+    } else {
+        echo "Error updating inventory: " . $conn->error;
+    }
+    
+    // Close statement and connection
+    $stmt->close();
+    $conn->close();
+}
+?>
