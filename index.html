@@ -24,7 +24,7 @@
 <body>
     <h1>Coil Tracking Update</h1>
     
-    <form id="inventoryForm" action="store_inventory.php" method="POST">
+    <form id="inventoryForm" action="https://smganesh7.github.io/Coil-Tracking-Update/store_inventory.php" method="POST">
         <label for="product">Coil Number:</label>
         <input type="text" id="product" name="product" required><br><br>
 
@@ -43,7 +43,7 @@
         <label for="row">Row:</label>
         <input type="number" id="row" name="row" min="1" max="26" required><br><br>
         
-        <button type="submit">Update Inventory</button>
+        <button type="button" onclick="updateInventory()">Update Inventory</button>
     </form>
     
     <h2>Inventory Status</h2>
@@ -66,6 +66,64 @@
         };
 
         console.log('Loaded inventory:', inventory);
+
+        // Function to update inventory
+        function updateInventory() {
+            const bay = document.getElementById('bay').value;
+            const column = document.getElementById('column').value.toUpperCase();
+            const row = document.getElementById('row').value;
+            const product = document.getElementById('product').value;
+
+            // Validate column and row inputs
+            if (!/^[A-Z]$/.test(column)) {
+                alert('Invalid column value. Please enter a single letter (A-Z).');
+                return;
+            }
+            if (row < 1 || row > 26) {
+                alert('Invalid row value. Please enter a number between 1 and 26.');
+                return;
+            }
+
+            // Check for duplicate coil number at the same location
+            let duplicateLocation = null;
+            for (let b in inventory) {
+                for (let c in inventory[b]) {
+                    for (let r in inventory[b][c]) {
+                        if (inventory[b][c][r] === product && !(b === bay && c === column && r === row)) {
+                            duplicateLocation = `${b}-${c}-${r}`;
+                            break;
+                        }
+                    }
+                    if (duplicateLocation) break;
+                }
+                if (duplicateLocation) break;
+            }
+
+            if (duplicateLocation) {
+                let [dupBay, dupColumn, dupRow] = duplicateLocation.split('-');
+                if (!confirm(`Coil number ${product} is already in ${dupBay}-${dupColumn}-${dupRow}. Do you want to replace it with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
+                }
+                // Clear the old location
+                inventory[dupBay][dupColumn][dupRow] = "";
+            }
+
+            // Check for existing coil number at the same location
+            if (!inventory[bay][column]) {
+                inventory[bay][column] = {};
+            }
+            if (inventory[bay][column][row] !== undefined && inventory[bay][column][row] !== "") {
+                if (!confirm(`Do you want to replace coil number ${inventory[bay][column][row]} with ${product} at ${bay}-${column}-${row}?`)) {
+                    return;
+                }
+            }
+
+            // Update inventory
+            inventory[bay][column][row] = product;
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            console.log('Updated inventory:', inventory);
+            displayInventory();
+        }
 
         // Function to display inventory
         function displayInventory() {
@@ -164,7 +222,6 @@
                     maxRows = bayData.length;
                 }
             }
-
             // Ensure all columns have the same number of rows
             for (let i = 0; i < tableData.length; i++) {
                 while (tableData[i].length < maxRows) {
