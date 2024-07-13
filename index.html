@@ -134,11 +134,11 @@
                     for (let row in inventory[bay][column]) {
                         if (inventory[bay][column][row] !== "") {
                             tableHTML += `<tr>
+                            <td><input type="checkbox" class="delete-checkbox" data-bay="${bay}" data-column="${column}" data-row="${row}"></td>
                                             <td>${inventory[bay][column][row]}</td>
                                             <td>${bay}</td>
                                             <td>${column}</td>
                                             <td>${row}</td>
-                                            <td><input type="checkbox" class="delete-checkbox" data-bay="${bay}" data-column="${column}" data-row="${row}"></td>
                                           </tr>`;
                         }
                     }
