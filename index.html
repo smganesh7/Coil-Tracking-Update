@@ -227,40 +227,46 @@
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
 
-            let columns = ["Coil Number", "Bay", "Column", "Row"];
+            let columns = ["MN Bay", "NP Bay", "PQ Bay", "RS Bay", "ST Bay"];
             let tableData = [];
+            let maxRows = 0;
 
+            // Collect data for each bay
             for (let bay in inventory) {
+                let bayData = [];
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
                         if (inventory[bay][column][row] !== "") {
-                            tableData.push([
-                                inventory[bay][column][row],
-                                bay,
-                                column,
-                                row
-                            ]);
+                            bayData.push(`${inventory[bay][column][row]}-${bay}-${column}-${row}`);
                         }
                     }
                 }
+                tableData.push(bayData);
+                if (bayData.length > maxRows) {
+                    maxRows = bayData.length;
+                }
             }
 
-            // Sort the table data
-            tableData.sort((a, b) => {
-                if (a[1] < b[1]) return -1;
-                if (a[1] > b[1]) return 1;
-                if (a[2] < b[2]) return -1;
-                if (a[2] > b[2]) return 1;
-                if (a[3] < b[3]) return -1;
-                if (a[3] > b[3]) return 1;
-                if (a[0] < b[0]) return -1;
-                if (a[0] > b[0]) return 1;
-                return 0;
-            });
+            // Ensure all columns have the same number of rows
+            for (let i = 0; i < tableData.length; i++) {
+                while (tableData[i].length < maxRows) {
+                    tableData[i].push("");
+                }
+            }
+
+            // Convert the data into row-wise format for autoTable
+            let rowWiseData = [];
+            for (let i = 0; i < maxRows; i++) {
+                let row = [];
+                for (let j = 0; j < tableData.length; j++) {
+                    row.push(tableData[j][i]);
+                }
+                rowWiseData.push(row);
+            }
 
             doc.autoTable({
                 head: [columns],
-                body: tableData,
+                body: rowWiseData,
                 startY: 30,
                 styles: {
                     cellPadding: 3,
@@ -276,7 +282,7 @@
 
             doc.save("Inventory.pdf");
         }
-
+        
         // Function to toggle select/deselect all
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('selectAll');
