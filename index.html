@@ -217,60 +217,60 @@
 
         // Function to download inventory as PDF
         function downloadAsPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ format: 'a4' });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ format: 'a4' });
 
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Coil Tracking Update", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-            
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Coil Tracking Update", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
 
-            let tableData = [];
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            tableData.push([
-                                inventory[bay][column][row],
-                                bay,
-                                column,
-                                Parseint(row) // Convert Rowvto Number
-                            ]);
-                        }
-                    }
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    let tableData = [];
+    for (let bay in inventory) {
+        for (let column in inventory[bay]) {
+            for (let row in inventory[bay][column]) {
+                if (inventory[bay][column][row] !== "") {
+                    tableData.push([
+                        inventory[bay][column][row],
+                        bay,
+                        column,
+                        parseInt(row) // Convert row to number
+                    ]);
                 }
             }
-
-            tableData.sort((a, b) => {
-                if (a[1] < b[1]) return -1;
-                if (a[1] > b[1]) return 1;
-                if (a[2] < b[2]) return -1;
-                if (a[2] > b[2]) return 1;
-                if (a[3] < b[3]) return -1;
-                if (a[3] > b[3]) return 1;
-                if (a[0] < b[0]) return -1;
-                if (a[0] > b[0]) return 1;
-                return 0;
-            });
-
-            let columns = ["Coil Number", "Bay", "Column", "Row"];
-            doc.autoTable({
-                head: [columns],
-                body: tableData,
-                startY: 30,
-                styles: {
-                    fontSize: 10,
-                    halign: 'center',
-                    valign: 'middle'
-                },
-                margin: { top: 30 },
-                pageBreak: 'auto'
-            });
-
-            doc.save("Inventory.pdf");
         }
+    }
+
+    tableData.sort((a, b) => {
+        if (a[1] < b[1]) return -1;
+        if (a[1] > b[1]) return 1;
+        if (a[2] < b[2]) return -1;
+        if (a[2] > b[2]) return 1;
+        if (a[3] < b[3]) return -1;
+        if (a[3] > b[3]) return 1;
+        if (a[0] < b[0]) return -1;
+        if (a[0] > b[0]) return 1;
+        return 0;
+    });
+
+    let columns = ["Coil Number", "Bay", "Column", "Row"];
+    doc.autoTable({
+        head: [columns],
+        body: tableData,
+        startY: 30,
+        styles: {
+            fontSize: 10,
+            halign: 'center',
+            valign: 'middle'
+        },
+        margin: { top: 30 },
+        pageBreak: 'auto'
+    });
+
+    doc.save("Inventory.pdf");
+}
         
         // Function to toggle select/deselect all
         function toggleSelectAll() {
