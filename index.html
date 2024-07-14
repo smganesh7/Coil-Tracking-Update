@@ -232,21 +232,36 @@
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
                         if (inventory[bay][column][row] !== "") {
-                            tableData.push([`${inventory[bay][column][row]}-${bay}-${column}-${row}`]);
+                            tableData.push([
+                                inventory[bay][column][row],
+                                bay,
+                                column,
+                                row
+                            ]);
                         }
                     }
                 }
             }
 
-            
+            tableData.sort((a, b) => {
+                if (a[1] < b[1]) return -1;
+                if (a[1] > b[1]) return 1;
+                if (a[2] < b[2]) return -1;
+                if (a[2] > b[2]) return 1;
+                if (a[3] < b[3]) return -1;
+                if (a[3] > b[3]) return 1;
+                if (a[0] < b[0]) return -1;
+                if (a[0] > b[0]) return 1;
+                return 0;
+            });
 
-            let columns = ["Location"];
+            let columns = ["Coil Number", "Bay", "Column", "Row"];
             doc.autoTable({
                 head: [columns],
                 body: tableData,
                 startY: 30,
                 styles: {
-                    fontSize: 8,
+                    fontSize: 10,
                     halign: 'center',
                     valign: 'middle'
                 },
