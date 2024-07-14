@@ -38,7 +38,7 @@
         </select><br><br>
         
         <label for="column">Column:</label>
-        <input type="text" id="column" name="column" maxlength="1" placeholder="A-Z" required><br><br>
+        <input type="text" id="column" name="column" maxlength="1" placeholder="A-Z" required oninput="this.value = this.value.toUpperCase()"><br><br>
         
         <label for="row">Row:</label>
         <input type="number" id="row" name="row" min="1" max="26" required><br><br>
