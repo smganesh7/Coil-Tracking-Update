@@ -232,12 +232,7 @@
                 for (let column in inventory[bay]) {
                     for (let row in inventory[bay][column]) {
                         if (inventory[bay][column][row] !== "") {
-                            tableData.push([
-                                inventory[bay][column][row],
-                                bay,
-                                column,
-                                row
-                            ]);
+                            tableData.push([`${inventory[bay][column][row]}-${bay}-${column}-${row}`]);
                         }
                     }
                 }
