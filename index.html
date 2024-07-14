@@ -127,51 +127,51 @@
 
         // Function to display inventory
         function displayInventory() {
-            let entries = [];
+    let entries = [];
 
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            entries.push({
-                                product: inventory[bay][column][row],
-                                bay: bay,
-                                column: column,
-                                row: row
-                            });
-                        }
-                    }
+    for (let bay in inventory) {
+        for (let column in inventory[bay]) {
+            for (let row in inventory[bay][column]) {
+                if (inventory[bay][column][row] !== "") {
+                    entries.push({
+                        product: inventory[bay][column][row],
+                        bay: bay,
+                        column: column,
+                        row: parseInt(row) // Convert row to number
+                    });
                 }
             }
-
-            // Sort the entries
-            entries.sort((a, b) => {
-                if (a.bay < b.bay) return -1;
-                if (a.bay > b.bay) return 1;
-                if (a.column < b.column) return -1;
-                if (a.column > b.column) return 1;
-                if (a.row < b.row) return -1;
-                if (a.row > b.row) return 1;
-                if (a.product < b.product) return -1;
-                if (a.product > b.product) return 1;
-                return 0;
-            });
-
-            let tableHTML = '<table><tr><th>Select</th><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th></tr>';
-
-            entries.forEach(entry => {
-                tableHTML += `<tr>
-                                <td><input type="checkbox" class="delete-checkbox" data-bay="${entry.bay}" data-column="${entry.column}" data-row="${entry.row}"></td>
-                                <td>${entry.product}</td>
-                                <td>${entry.bay}</td>
-                                <td>${entry.column}</td>
-                                <td>${entry.row}</td>
-                              </tr>`;
-            });
-
-            tableHTML += '</table>';
-            document.getElementById('inventoryTable').innerHTML = tableHTML;
         }
+    }
+
+    // Sort the entries
+    entries.sort((a, b) => {
+        if (a.bay < b.bay) return -1;
+        if (a.bay > b.bay) return 1;
+        if (a.column < b.column) return -1;
+        if (a.column > b.column) return 1;
+        if (a.row < b.row) return -1;
+        if (a.row > b.row) return 1;
+        if (a.product < b.product) return -1;
+        if (a.product > b.product) return 1;
+        return 0;
+    });
+
+    let tableHTML = '<table><tr><th>Select</th><th>Coil Number</th><th>Bay</th><th>Column</th><th>Row</th></tr>';
+
+    entries.forEach(entry => {
+        tableHTML += `<tr>
+                        <td><input type="checkbox" class="delete-checkbox" data-bay="${entry.bay}" data-column="${entry.column}" data-row="${entry.row}"></td>
+                        <td>${entry.product}</td>
+                        <td>${entry.bay}</td>
+                        <td>${entry.column}</td>
+                        <td>${entry.row}</td>
+                      </tr>`;
+    });
+
+    tableHTML += '</table>';
+    document.getElementById('inventoryTable').innerHTML = tableHTML;
+}
 
         // Function to delete selected entries
         function deleteSelectedEntries() {
@@ -236,7 +236,7 @@
                                 inventory[bay][column][row],
                                 bay,
                                 column,
-                                row
+                                Parseint(row) // Convert Rowvto Number
                             ]);
                         }
                     }
