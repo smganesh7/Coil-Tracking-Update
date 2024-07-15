@@ -24,7 +24,7 @@
 <body>
     <h1>Coil Tracking Update</h1>
     
-    <form id="inventoryForm" action="https://smganesh7.github.io/Coil-Tracking-Update/store_inventory.php" method="POST">
+    <form id="inventoryForm" action="https://cotrup.netlify/app/store_inventory.php" method="POST">
         <label for="product">Coil Number:</label>
         <input type="text" id="product" name="product" required><br><br>
 
@@ -33,6 +33,7 @@
             <option value="MN">MN</option>
             <option value="NP">NP</option>
             <option value="PQ">PQ</option>
+            <option value="QR">QR</option>
             <option value="RS">RS</option>
             <option value="ST">ST</option>
         </select><br><br>
@@ -41,16 +42,19 @@
         <input type="text" id="column" name="column" maxlength="1" placeholder="A-Z" required oninput="this.value = this.value.toUpperCase()"><br><br>
         
         <label for="row">Row:</label>
-        <input type="number" id="row" name="row" min="1" max="26" required><br><br>
+        <input type="number" id="row" name="row" min="1" max="20" required><br><br>
         
         <button type="button" onclick="updateInventory()">Update Inventory</button>
     </form>
     
     <h2>Inventory Status</h2>
-    <button type="button" onclick="deleteSelectedEntries()">Delete Selected Entries</button>
     <button type="button" onclick="downloadAsExcel()">Download as Excel</button>
-    <button type="button" onclick="downloadAsPDF()">Download as PDF</button>
+    <button type="button" onclick="downloadAsPDF()">Download as PDF</button><br>
     <input type="checkbox" id="selectAll" onclick="toggleSelectAll()"> Select/Deselect All
+    <button type="button" onclick="deleteSelectedEntries()">Delete Selected Entries</button><br><br>
+
+
+
     <div id="inventoryTable">
         <!-- Inventory table will be inserted here by JavaScript -->
     </div>
@@ -61,6 +65,7 @@
             MN: {},
             NP: {},
             PQ: {},
+            QR: {},
             RS: {},
             ST: {}
         };
@@ -79,8 +84,8 @@
                 alert('Invalid column value. Please enter a single letter (A-Z).');
                 return;
             }
-            if (row < 1 || row > 26) {
-                alert('Invalid row value. Please enter a number between 1 and 26.');
+            if (row < 1 || row > 20) {
+                alert('Invalid row value. Please enter a number between 1 and 20.');
                 return;
             }
 
@@ -195,82 +200,135 @@
             displayInventory();
         }
 
-        // Function to download inventory as Excel
-        function downloadAsExcel() {
-            let wb = XLSX.utils.book_new();
-            let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
-
-            for (let bay in inventory) {
-                for (let column in inventory[bay]) {
-                    for (let row in inventory[bay][column]) {
-                        if (inventory[bay][column][row] !== "") {
-                            ws_data.push([inventory[bay][column][row], bay, column, row]);
-                        }
-                    }
-                }
-            }
-
-            let ws = XLSX.utils.aoa_to_sheet(ws_data);
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            XLSX.writeFile(wb, "Inventory.xlsx");
-        }
-
-        // Function to download inventory as PDF
-        function downloadAsPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ format: 'a4' });
-
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Coil Tracking Update", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-
-    let tableData = [];
+// Function to download inventory as Excel
+function downloadAsExcel() {
+    let wb = XLSX.utils.book_new();
+    let ws_data = [['Coil Tracking Update'], [''], ['Coil Number', 'Bay', 'Column', 'Row']];
+ 
+    // Prepare data from displayed inventory
+    let entries = [];
     for (let bay in inventory) {
         for (let column in inventory[bay]) {
             for (let row in inventory[bay][column]) {
                 if (inventory[bay][column][row] !== "") {
-                    tableData.push([
-                        inventory[bay][column][row],
-                        bay,
-                        column,
-                        parseInt(row) // Convert row to number
-                    ]);
+                    entries.push({
+                        product: inventory[bay][column][row],
+                        bay: bay,
+                        column: column,
+                        row: parseInt(row) // Convert row to number
+                    });
                 }
             }
         }
     }
-
-    tableData.sort((a, b) => {
-        if (a[1] < b[1]) return -1;
-        if (a[1] > b[1]) return 1;
-        if (a[2] < b[2]) return -1;
-        if (a[2] > b[2]) return 1;
-        if (a[3] < b[3]) return -1;
-        if (a[3] > b[3]) return 1;
-        if (a[0] < b[0]) return -1;
-        if (a[0] > b[0]) return 1;
+ 
+    // Sort entries based on bay, column, row, and product
+    entries.sort((a, b) => {
+        if (a.bay < b.bay) return -1;
+        if (a.bay > b.bay) return 1;
+        if (a.column < b.column) return -1;
+        if (a.column > b.column) return 1;
+        if (a.row < b.row) return -1;
+        if (a.row > b.row) return 1;
+        if (a.product < b.product) return -1;
+        if (a.product > b.product) return 1;
         return 0;
     });
-
-    let columns = ["Coil Number", "Bay", "Column", "Row"];
-    doc.autoTable({
-        head: [columns],
-        body: tableData,
-        startY: 30,
-        styles: {
-            fontSize: 10,
-            halign: 'center',
-            valign: 'middle'
-        },
-        margin: { top: 30 },
-        pageBreak: 'auto'
+ 
+    // Populate worksheet data
+    entries.forEach(entry => {
+        ws_data.push([entry.product, entry.bay, entry.column, entry.row]);
     });
+ 
+    let ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+    XLSX.writeFile(wb, "Inventory.xlsx");
+}
 
+
+// Function to download inventory as PDF
+function downloadAsPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+ 
+    const columns = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)); // A to Z columns
+    const rowNumbers = Array.from({ length: 20 }, (_, i) => i + 1); // Rows 1 to 20
+ 
+    // Function to prepare table data for a bay
+    const prepareTableDataForBay = (bay) => {
+        let tableData = [];
+ 
+        // Header row with column letters
+        let headerRow = [''];
+        headerRow.push(...columns);
+        tableData.push(headerRow);
+ 
+        // Data rows
+        rowNumbers.forEach(row => {
+            let rowData = [row];
+            columns.forEach(column => {
+                rowData.push(inventory[bay][column] && inventory[bay][column][row.toString()] ? inventory[bay][column][row.toString()] : "");
+            });
+            tableData.push(rowData);
+        });
+ 
+        return tableData;
+    };
+ 
+    for (let bay in inventory) {
+        if (Object.keys(inventory[bay]).length > 0) {
+            if (bay !== 'MN') {
+                doc.addPage();
+            }
+ 
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Coil Tracking Update", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+ 
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+ 
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setFillColor(255, 255, 0); // Yellow background for header
+            doc.setTextColor(0); // Black text color
+            doc.text(`Bay: ${bay}`, 10, 30);
+ 
+            let tableData = prepareTableDataForBay(bay);
+            doc.autoTable({
+                head: tableData.slice(0, 1), // First row is header
+                body: tableData.slice(1), // Remaining rows are body
+                startY: 40,
+                columnStyles: {
+                    0: { cellWidth: 15 }, // Adjust width of the first column if needed
+                    // Set equal width for all columns except the first one
+                    ...columns.reduce((styles, column) => {
+                        styles[column] = { cellWidth: 15 }; // Adjust as needed
+                        return styles;
+                    }, {})
+                },
+                styles: {
+                    fontSize: 8,
+                    halign: 'center',
+                    valign: 'middle',
+                    lineColor: [0, 0, 0], // Black borders
+                    lineWidth: 0.1,
+                    fillColor: [255, 255, 255] // White background for body cells
+                },
+                headStyles: {
+                    fillColor: [255, 255, 0], // Yellow background for header
+                    textColor: [0, 0, 0], // Black text color for header
+                    fontStyle: 'bold' // Bold font style for header
+                },
+                margin: { top: 10 },
+                pageBreak: 'auto'
+            });
+        }
+    }
+ 
     doc.save("Inventory.pdf");
 }
+
         
         // Function to toggle select/deselect all
         function toggleSelectAll() {
