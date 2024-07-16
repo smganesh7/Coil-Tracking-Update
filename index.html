@@ -250,19 +250,15 @@ function downloadAsExcel() {
 function downloadAsPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
- 
     const columns = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)); // A to Z columns
     const rowNumbers = Array.from({ length: 20 }, (_, i) => i + 1); // Rows 1 to 20
  
     // Function to prepare table data for a bay
     const prepareTableDataForBay = (bay) => {
         let tableData = [];
- 
         // Header row with column letters
-        let headerRow = [''];
-        headerRow.push(...columns);
+        let headerRow = ['', ...columns];
         tableData.push(headerRow);
- 
         // Data rows
         rowNumbers.forEach(row => {
             let rowData = [row];
@@ -271,65 +267,66 @@ function downloadAsPDF() {
             });
             tableData.push(rowData);
         });
- 
         return tableData;
     };
  
-    for (let bay in inventory) {
-        if (Object.keys(inventory[bay]).length > 0) {
-            if (bay !== 'MN') {
-                doc.addPage();
-            }
+    // Ensure all bays are included in PDF, even with no data
+    const allBays = Object.keys(inventory);
  
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Coil Tracking Update", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
- 
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
- 
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setFillColor(255, 255, 0); // Yellow background for header
-            doc.setTextColor(0); // Black text color
-            doc.text(`Bay: ${bay}`, 10, 30);
- 
-            let tableData = prepareTableDataForBay(bay);
-            doc.autoTable({
-                head: tableData.slice(0, 1), // First row is header
-                body: tableData.slice(1), // Remaining rows are body
-                startY: 40,
-                columnStyles: {
-                    0: { cellWidth: 15 }, // Adjust width of the first column if needed
-                    // Set equal width for all columns except the first one
-                    ...columns.reduce((styles, column) => {
-                        styles[column] = { cellWidth: 15 }; // Adjust as needed
-                        return styles;
-                    }, {})
-                },
-                styles: {
-                    fontSize: 8,
-                    halign: 'center',
-                    valign: 'middle',
-                    lineColor: [0, 0, 0], // Black borders
-                    lineWidth: 0.1,
-                    fillColor: [255, 255, 255] // White background for body cells
-                },
-                headStyles: {
-                    fillColor: [255, 255, 0], // Yellow background for header
-                    textColor: [0, 0, 0], // Black text color for header
-                    fontStyle: 'bold' // Bold font style for header
-                },
-                margin: { top: 10 },
-                pageBreak: 'auto'
-            });
+    allBays.forEach((bay, index) => {
+        if (index > 0) {
+            doc.addPage();
         }
-    }
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        // Set heading with BAY name
+        doc.text(`${bay} Bay - Coil Tracking Update`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setFillColor(255, 255, 0); // Yellow background for header
+        doc.setTextColor(0); // Black text color
+        let tableData = prepareTableDataForBay(bay);
+ 
+        // Insert BAY name into the top-left corner of the table data
+        tableData[0][0] = `Bay: ${bay}`;
+ 
+        doc.autoTable({
+            head: tableData.slice(0, 1), // Only the first row which now includes BAY name
+            body: tableData.slice(1), // Remaining rows are body
+            startY: 30,
+            columnStyles: {
+                0: { cellWidth: 15 }, // Adjust width of the first column if needed
+                // Set equal width for all columns except the first one
+                ...columns.reduce((styles, column) => {
+                    styles[column] = { cellWidth: 15 }; // Adjust as needed
+                    return styles;
+                }, {})
+            },
+            styles: {
+                fontSize: 8,
+                halign: 'center',
+                valign: 'middle',
+                lineColor: [0, 0, 0], // Black borders
+                lineWidth: 0.1,
+                fillColor: [255, 255, 255] // White background for body cells
+            },
+            headStyles: {
+                fillColor: [255, 255, 0], // Yellow background for header
+                textColor: [0, 0, 0], // Black text color for header
+                fontStyle: 'bold' // Bold font style for header
+            },
+            margin: { top: 10 },
+            pageBreak: 'auto'
+        });
+    });
  
     doc.save("Inventory.pdf");
 }
 
-        
+
+
         // Function to toggle select/deselect all
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('selectAll');
